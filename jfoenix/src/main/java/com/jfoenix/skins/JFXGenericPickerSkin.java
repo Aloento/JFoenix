@@ -121,7 +121,7 @@ public abstract class JFXGenericPickerSkin<T> extends ComboBoxPopupControl<T>{
         // handle FakeFocusField cast exception
         try {
             final ReadOnlyBooleanProperty focusedProperty = comboBoxBase.focusedProperty();
-            ExpressionHelper value = ReflectionHelper.getFieldContent(focusedProperty.getClass().getSuperclass(), focusedProperty, "helper");
+            ExpressionHelper value = ReflectionHelper.getFieldContent(focusedProperty.getClass().getSuperclass().getSuperclass(), focusedProperty, "helper");
             ChangeListener[] changeListeners = ReflectionHelper.getFieldContent(value.getClass(), value, "changeListeners");
             // remove parent focus listener to prevent editor class cast exception
             for(int i = changeListeners.length - 1; i > 0; i--) {

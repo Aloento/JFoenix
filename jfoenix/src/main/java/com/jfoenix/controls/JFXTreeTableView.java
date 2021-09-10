@@ -101,12 +101,6 @@ public class JFXTreeTableView<S extends RecursiveTreeObject<S>> extends TreeTabl
 
         this.setRowFactory(param -> new JFXTreeTableRow<>());
 
-        this.getSelectionModel().selectedItemProperty().addListener((o, oldVal, newVal) -> {
-            if (newVal != null && newVal.getValue() != null) {
-                itemWasSelected = true;
-            }
-        });
-
         this.predicate.addListener(observable -> filter(getPredicate()));
         this.sceneProperty().addListener(observable -> {
             if (getScene() == null) {
@@ -169,24 +163,6 @@ public class JFXTreeTableView<S extends RecursiveTreeObject<S>> extends TreeTabl
         }
         return level;
     }
-
-    /*
-     * clear selection before sorting as it's bugged in java
-     */
-    private boolean itemWasSelected = false;
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void sort() {
-        getSelectionModel().clearSelection();
-        super.sort();
-        if (itemWasSelected) {
-            getSelectionModel().select(0);
-        }
-    }
-
 
     // Allows for multiple column Grouping based on the order of the TreeTableColumns
     // in this observableArrayList.

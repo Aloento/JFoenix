@@ -21,6 +21,7 @@ package com.jfoenix.skins;
 
 import com.jfoenix.controls.JFXSpinner;
 import com.sun.javafx.scene.NodeHelper;
+import com.sun.javafx.scene.TreeShowingExpression;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -48,6 +49,7 @@ import javafx.util.Duration;
 public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
 
     private JFXSpinner control;
+    private TreeShowingExpression treeShowingExpression;
     private boolean isValid = false;
 
     private Color greenColor;
@@ -66,6 +68,7 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
         super(control);
 
         this.control = control;
+        this.treeShowingExpression = new TreeShowingExpression(control);
 
         blueColor = Color.valueOf("#4285f4");
         redColor = Color.valueOf("#db4437");
@@ -91,6 +94,7 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
         fillRect = new Rectangle();
         fillRect.setFill(Color.TRANSPARENT);
         text = new Text();
+        text.setStyle("-fx-font-size:null");
         text.getStyleClass().setAll("text", "percentage");
         final Group group = new Group(fillRect, track, arc, text);
         group.setManaged(false);
@@ -101,7 +105,7 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
         // register listeners
         registerChangeListener(control.indeterminateProperty(), obs -> initialize());
         registerChangeListener(control.progressProperty(), obs -> updateProgress());
-        registerChangeListener(NodeHelper.treeShowingProperty(control), obs->updateAnimation());
+        registerChangeListener(treeShowingExpression, obs -> updateAnimation());
         registerChangeListener(control.sceneProperty(), obs->updateAnimation());
     }
 
@@ -169,12 +173,16 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
         }
     }
 
+    private double computeSize() {
+        return control.getRadius() * 2 + arc.getStrokeWidth() * 2;
+    }
+
     @Override
     protected double computeMaxHeight(double width, double topInset, double rightInset, double bottomInset, double leftInset) {
         if (Region.USE_COMPUTED_SIZE == control.getRadius()) {
             return super.computeMaxHeight(width, topInset, rightInset, bottomInset, leftInset);
         } else {
-            return control.getRadius() * 2 + arc.getStrokeWidth() * 2;
+            return computeSize();
         }
     }
 
@@ -183,18 +191,26 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
         if (Region.USE_COMPUTED_SIZE == control.getRadius()) {
             return super.computeMaxHeight(height, topInset, rightInset, bottomInset, leftInset);
         } else {
-            return control.getRadius() * 2 + arc.getStrokeWidth() * 2;
+            return computeSize();
         }
     }
 
     @Override
     protected double computePrefWidth(double height, double topInset, double rightInset, double bottomInset, double leftInset) {
-        return arcPane.prefWidth(-1);
+        if (Region.USE_COMPUTED_SIZE == control.getRadius()) {
+            return arcPane.prefWidth(-1);
+        } else {
+            return computeSize();
+        }
     }
 
     @Override
     protected double computePrefHeight(double width, double topInset, double rightInset, double bottomInset, double leftInset) {
-        return arcPane.prefHeight(-1);
+        if (Region.USE_COMPUTED_SIZE == control.getRadius()) {
+            return arcPane.prefHeight(-1);
+        } else {
+            return computeSize();
+        }
     }
 
     /**
@@ -310,6 +326,7 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
     @Override
     public void dispose() {
         super.dispose();
+        treeShowingExpression.dispose();
         clearAnimation();
         arc = null;
         track = null;

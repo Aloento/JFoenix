@@ -176,41 +176,75 @@ public class RecursiveTreeItem<T extends RecursiveTreeObject<T>> extends TreeIte
         }
 
         filteredItems = new FilteredList<>(originalItems, (TreeItem<T> t) -> true);
-
-        this.getChildren().addAll(originalItems);
-
+        ObservableList<TreeItem<T>> childrenItemList = getChildren();
+        childrenItemList.addAll(originalItems);
         children.addListener((ListChangeListener<T>) change -> {
-            while (change.next()) {
-                if (change.wasRemoved()) {
-                    List<TreeItem<T>> removedItems = new ArrayList<>();
-                    for (T t : change.getRemoved()) {
-                        final TreeItem<T> treeItem = itemsMap.remove(t);
-                        if (treeItem != null) {
-                            // remove the items from the current/original items list
-                            removedItems.add(treeItem);
-                        }
-                    }
-                    if (originalItems.size() == removedItems.size()) {
-                        originalItems.clear();
-                        getChildren().clear();
-                    } else {
-                        getChildren().removeAll(removedItems);
-                        originalItems.removeAll(removedItems);
+            boolean childrenSameAsOriginal = originalItems.size() == childrenItemList.size();
+            if (childrenSameAsOriginal) {
+                for (int i = 0; i < originalItems.size(); i++) {
+                    if (originalItems.get(i) != childrenItemList.get(i)) {
+                        childrenSameAsOriginal = false;
+                        break;
                     }
                 }
-                if (change.wasAdded()) {
-                    List<RecursiveTreeItem<T>> addedItems = new ArrayList<>();
-                    for (T newChild : change.getAddedSubList()) {
-                        final RecursiveTreeItem<T> newTreeItem = new RecursiveTreeItem<>(newChild, getGraphic(), childrenFactory);
-                        addedItems.add(newTreeItem);
-                        itemsMap.put(newChild, newTreeItem);
+            }
+            while (change.next()) {
+                if (change.wasPermutated()) {
+                    TreeItem<T>[] original = originalItems.toArray(new TreeItem[0]);
+                    for (int i = change.getFrom(); i < change.getTo(); i++) {
+                        originalItems.set(change.getPermutation(i), original[i]);
+                        if (childrenSameAsOriginal) {
+                            childrenItemList.set(change.getPermutation(i), original[i]);
+                        }
                     }
-                    getChildren().addAll(addedItems);
-                    originalItems.addAll(addedItems);
+                } else {
+                    if (change.wasReplaced()) {
+                        for (int i = change.getFrom(); i < change.getTo(); i++) {
+                            final RecursiveTreeItem<T> newTreeItem = new RecursiveTreeItem<>(children.get(i), getGraphic(), childrenFactory);
+                            itemsMap.put(newTreeItem.getValue(), newTreeItem);
+                            if (childrenSameAsOriginal) {
+                                childrenItemList.set(i, newTreeItem);
+                            } else {
+                                childrenItemList.remove(originalItems.get(i));
+                                childrenItemList.add(newTreeItem);
+                            }
+                            originalItems.set(i, newTreeItem);
+                        }
+                    } else {
+                        if (change.wasRemoved()) {
+                            List<TreeItem<T>> removedItems = new ArrayList<>();
+                            for (T t : change.getRemoved()) {
+                                final TreeItem<T> treeItem = itemsMap.remove(t);
+                                if (treeItem != null) {
+                                    // remove the items from the current/original items list
+                                    removedItems.add(treeItem);
+                                }
+                            }
+                            if (originalItems.size() == removedItems.size()) {
+                                originalItems.clear();
+                                childrenItemList.clear();
+                            } else {
+                                childrenItemList.removeAll(removedItems);
+                                originalItems.removeAll(removedItems);
+                            }
+                        }
+                        if (change.wasAdded()) {
+                            List<RecursiveTreeItem<T>> addedItems = new ArrayList<>();
+                            for (int i = change.getFrom(); i < change.getTo(); i++) {
+                                final RecursiveTreeItem<T> newTreeItem = new RecursiveTreeItem<>(children.get(i), getGraphic(), childrenFactory);
+                                addedItems.add(newTreeItem);
+                                itemsMap.put(newTreeItem.getValue(), newTreeItem);
+                                originalItems.add(i, newTreeItem);
+                                if (childrenSameAsOriginal) {
+                                    childrenItemList.add(i, newTreeItem);
+                                }
+                            }
+                            if (!childrenSameAsOriginal) getChildren().addAll(addedItems);
+                        }
+                    }
                 }
             }
         });
-
     }
 
     public final ObjectProperty<Predicate<TreeItem<T>>> predicateProperty() {

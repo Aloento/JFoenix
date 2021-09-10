@@ -27,8 +27,13 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.DoubleProperty;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.control.Slider;
 import javafx.scene.control.skin.SliderSkin;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
@@ -58,13 +63,13 @@ public class JFXSliderSkin extends SliderSkin {
     private StackPane thumb;
     private StackPane track;
     private StackPane animatedThumb;
+    private NumberAxis tickLine;
 
     private Timeline timeline;
 
     private double indicatorRotation;
     private double horizontalRotation;
     private double shifting;
-    private boolean isValid = false;
 
 
     public JFXSliderSkin(JFXSlider slider) {
@@ -72,6 +77,8 @@ public class JFXSliderSkin extends SliderSkin {
 
         track = (StackPane) getSkinnable().lookup(".track");
         thumb = (StackPane) getSkinnable().lookup(".thumb");
+        tickLine = (NumberAxis) getSkinnable().lookup(".axis");
+        if (tickLine != null) tickLine.setAnimated(false);
 
         coloredTrack = new StackPane();
         coloredTrack.getStyleClass().add("colored-track");
@@ -87,12 +94,43 @@ public class JFXSliderSkin extends SliderSkin {
         animatedThumb.setScaleX(0);
         animatedThumb.setScaleY(0);
 
-        getChildren().add(getChildren().indexOf(thumb), coloredTrack);
-        getChildren().add(getChildren().indexOf(thumb), animatedThumb);
-        getChildren().add(0, mouseHandlerPane);
+        thumb.layoutXProperty().addListener(x -> {
+            if (slider.getOrientation() == Orientation.VERTICAL) initAnimation(Orientation.VERTICAL);
+        });
+        thumb.layoutYProperty().addListener(y -> {
+            if (slider.getOrientation() == Orientation.HORIZONTAL) initAnimation(Orientation.HORIZONTAL);
+        });
+
+        addJFXChildren();
+        getChildren().addListener((ListChangeListener<Node>) c -> {
+            while (c.next()) {
+                if (c.wasAdded()) {
+                    c.getAddedSubList().forEach(added -> {
+                        if (added instanceof NumberAxis) {
+                            tickLine = (NumberAxis) added;
+                            tickLine.setAnimated(false);
+                        }
+                    });
+                }
+            }
+        });
+        registerChangeListener(slider.showTickMarksProperty(), e -> addJFXChildren());
+        registerChangeListener(slider.showTickLabelsProperty(), e -> addJFXChildren());
         registerChangeListener(slider.valueFactoryProperty(), obs->refreshSliderValueBinding());
 
         initListeners();
+    }
+
+    private void addJFXChildren() {
+        ObservableList<Node> children = getChildren();
+        Slider slider = getSkinnable();
+        if ((slider.isShowTickMarks() || slider.isShowTickLabels()) && tickLine != null && !children.contains(tickLine)) {
+            children.add(0, tickLine);
+        }
+        if (children.contains(coloredTrack)) return;
+        children.add(children.indexOf(thumb), coloredTrack);
+        children.add(children.indexOf(thumb), animatedThumb);
+        children.add(0, mouseHandlerPane);
     }
 
     private void refreshSliderValueBinding() {
@@ -115,10 +153,8 @@ public class JFXSliderSkin extends SliderSkin {
     protected void layoutChildren(double x, double y, double w, double h) {
         super.layoutChildren(x, y, w, h);
 
-        if (!isValid) {
-            initializeVariables();
+        if (timeline == null) {
             initAnimation(getSkinnable().getOrientation());
-            isValid = true;
         }
 
         double prefWidth = animatedThumb.prefWidth(-1);
@@ -187,7 +223,6 @@ public class JFXSliderSkin extends SliderSkin {
         updateValueStyleClass();
 
         getSkinnable().valueProperty().addListener(observable -> updateValueStyleClass());
-        getSkinnable().orientationProperty().addListener(observable -> initAnimation(getSkinnable().getOrientation()));
     }
 
     private void delegateToTrack(MouseEvent event) {
@@ -204,6 +239,8 @@ public class JFXSliderSkin extends SliderSkin {
 
 
     private void initAnimation(Orientation orientation) {
+        initializeVariables();
+
         double thumbPos, thumbNewPos;
         DoubleProperty layoutProperty;
 
