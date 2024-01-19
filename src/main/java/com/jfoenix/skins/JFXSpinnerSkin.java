@@ -21,7 +21,7 @@ package com.jfoenix.skins;
 
 import com.jfoenix.controls.JFXSpinner;
 import com.sun.javafx.scene.NodeHelper;
-import com.sun.javafx.scene.TreeShowingExpression;
+import com.sun.javafx.scene.TreeShowingProperty;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -49,7 +49,7 @@ import javafx.util.Duration;
 public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
 
     private JFXSpinner control;
-    private TreeShowingExpression treeShowingExpression;
+    private TreeShowingProperty TreeShowingProperty;
     private boolean isValid = false;
 
     private Color greenColor;
@@ -68,7 +68,7 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
         super(control);
 
         this.control = control;
-        this.treeShowingExpression = new TreeShowingExpression(control);
+        this.TreeShowingProperty = new TreeShowingProperty(control);
 
         blueColor = Color.valueOf("#4285f4");
         redColor = Color.valueOf("#db4437");
@@ -105,7 +105,7 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
         // register listeners
         registerChangeListener(control.indeterminateProperty(), obs -> initialize());
         registerChangeListener(control.progressProperty(), obs -> updateProgress());
-        registerChangeListener(treeShowingExpression, obs -> updateAnimation());
+        registerChangeListener(TreeShowingProperty, obs -> updateAnimation());
         registerChangeListener(control.sceneProperty(), obs->updateAnimation());
     }
 
@@ -326,7 +326,7 @@ public class JFXSpinnerSkin extends SkinBase<JFXSpinner> {
     @Override
     public void dispose() {
         super.dispose();
-        treeShowingExpression.dispose();
+        TreeShowingProperty.dispose();
         clearAnimation();
         arc = null;
         track = null;

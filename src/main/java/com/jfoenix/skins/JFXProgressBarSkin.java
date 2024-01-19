@@ -22,7 +22,7 @@ package com.jfoenix.skins;
 import com.jfoenix.controls.JFXProgressBar;
 import com.jfoenix.utils.JFXNodeUtils;
 import com.sun.javafx.scene.NodeHelper;
-import com.sun.javafx.scene.TreeShowingExpression;
+import com.sun.javafx.scene.TreeShowingProperty;
 import javafx.animation.*;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -48,12 +48,12 @@ public class JFXProgressBarSkin extends ProgressIndicatorSkin {
     private double secondaryBarWidth = 0;
     private Animation indeterminateTransition;
     private Region clip;
-    private TreeShowingExpression treeShowingExpression;
+    private TreeShowingProperty TreeShowingProperty;
 
     public JFXProgressBarSkin(JFXProgressBar bar) {
         super(bar);
 
-        this.treeShowingExpression = new TreeShowingExpression(bar);
+        this.TreeShowingProperty = new TreeShowingProperty(bar);
 
         bar.widthProperty().addListener(observable -> {
             updateProgress();
@@ -66,10 +66,10 @@ public class JFXProgressBarSkin extends ProgressIndicatorSkin {
         registerChangeListener(bar.parentProperty(), obs->updateAnimation());
         registerChangeListener(bar.sceneProperty(), obs->updateAnimation());
 
-        unregisterChangeListeners(treeShowingExpression);
+        unregisterChangeListeners(TreeShowingProperty);
         unregisterChangeListeners(bar.indeterminateProperty());
 
-        registerChangeListener(treeShowingExpression, obs -> this.updateAnimation());
+        registerChangeListener(TreeShowingProperty, obs -> this.updateAnimation());
         registerChangeListener(bar.indeterminateProperty(), obs->initialize());
 
         initialize();
@@ -222,7 +222,7 @@ public class JFXProgressBarSkin extends ProgressIndicatorSkin {
     @Override
     public void dispose() {
         super.dispose();
-        treeShowingExpression.dispose();
+        TreeShowingProperty.dispose();
         if (indeterminateTransition != null) {
             clearAnimation();
         }
